@@ -7,7 +7,8 @@ Identificar perda ou ganho de engajamento de usuários de uma comunidade
 a partir do histórico de pontos e atividades.
 
 ## Dados
-Datasets públicos no Kaggle: .
+Datasets públicos no Kaggle: https://www.kaggle.com/datasets/teocalvo/teomewhy-loyalty-system
+                             https://www.kaggle.com/datasets/teocalvo/teomewhy-education-platform
 
 ## Plano
 - [ ] Exploração e definição do ciclo de vida dos usuários
