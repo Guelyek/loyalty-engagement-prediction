@@ -142,7 +142,6 @@ tb_produtos_comprados AS (
     LEFT JOIN produtos AS t3
     ON t2.IdProduto = t3.IdProduto
 
-    LIMIT 5
 
 ),
 
