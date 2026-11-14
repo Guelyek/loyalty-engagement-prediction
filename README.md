@@ -1,6 +1,6 @@
 # Loyalty Predict: previsão de engajamento
 
-🚧 **Projeto em andamento.** Última atualização: 12/11/2026.
+🚧 **Projeto em andamento.** Última atualização: 14/11/2026.
 
 ## Objetivo
 Identificar perda ou ganho de engajamento de usuários de uma comunidade

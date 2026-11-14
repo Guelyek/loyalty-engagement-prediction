@@ -1,4 +1,18 @@
-WITH tb_qt_episodios_curso AS (
+WITH tb_usuario_cursos AS (
+        
+        SELECT  idUsuario,
+                descSlugCurso,
+                COUNT(descSlugCursoEpisodio) AS qtdeEps
+
+        FROM cursos_episodios_completos
+
+        WHERE DtCriacao < '2026-11-01'
+
+        GROUP BY idUsuario, descSlugCurso
+
+),
+
+tb_qt_episodios_curso AS (
 
     SELECT  descSlugCurso,
             count(descSlugCurso) AS qtEpisodiosCurso
@@ -13,16 +27,12 @@ tb_pct_curso AS (
 
     SELECT  t1.idUsuario,
             t1.descSlugCurso,
-            1. * COUNT(DISTINCT t1.descSlugCursoEpisodio) / t2.qtEpisodiosCurso AS pctCursoCompleto
+            1. * t1.qtdeEps / t2.qtEpisodiosCurso AS pctCursoCompleto
 
-    FROM cursos_episodios_completos AS t1
+    FROM tb_usuario_cursos AS t1
 
     LEFT JOIN tb_qt_episodios_curso AS t2
     ON t1.descSlugCurso = t2.descSlugCurso
-
-    WHERE dtCriacao < '2026-11-01'
-
-    GROUP BY t1.idUsuario, t1.descSlugCurso
 
 ),
 
@@ -129,7 +139,7 @@ tb_join AS (
 
 )
 
-SELECT  date('2026-11-01', '-1 day') as DtRef,
+SELECT  date('2026-11-01', '-1 day') AS DtRef,
         *
 
 FROM tb_join
