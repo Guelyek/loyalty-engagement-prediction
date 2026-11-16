@@ -4,7 +4,6 @@ import pandas as pd
 import sqlalchemy
 import matplotlib.pyplot as plt
 import seaborn as sns
-from exec_life_cycle import import_query
 from sklearn import cluster, preprocessing
 
 

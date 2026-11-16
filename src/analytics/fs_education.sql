@@ -6,7 +6,7 @@ WITH tb_usuario_cursos AS (
 
         FROM cursos_episodios_completos
 
-        WHERE DtCriacao < '2026-11-01'
+        WHERE DtCriacao < '{date}'
 
         GROUP BY idUsuario, descSlugCurso
 
@@ -89,7 +89,7 @@ tb_pct_cursos_pivot AS (
 
     FROM cursos_episodios_completos
 
-    WHERE dtCriacao < '2026-11-01'
+    WHERE dtCriacao < '{date}'
 
     UNION ALL
 
@@ -98,7 +98,7 @@ tb_pct_cursos_pivot AS (
 
     FROM recompensas_usuarios
 
-    WHERE dtRecompensa < '2026-11-01'
+    WHERE dtRecompensa < '{date}'
 
     UNION ALL
 
@@ -107,7 +107,7 @@ tb_pct_cursos_pivot AS (
 
     FROM habilidades_usuarios
 
-    WHERE dtCriacao < '2026-11-01'
+    WHERE dtCriacao < '{date}'
 
 ),
 
@@ -139,27 +139,7 @@ tb_join AS (
 
 )
 
-SELECT  date('2026-11-01', '-1 day') AS DtRef,
+SELECT  date('{date}', '-1 day') AS DtRef,
         *
 
 FROM tb_join
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
