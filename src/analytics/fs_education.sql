@@ -114,7 +114,7 @@ tb_pct_cursos_pivot AS (
 tb_ultima_ativacao AS (
 
 SELECT  idUsuario,
-        MAX(dtAtividade) AS UltimaAtivacao
+        min(julianday('{date}') - julianday(dtAtividade)) AS UltimaAtivacao
 
 FROM tb_ultimas_ativacoes
 
