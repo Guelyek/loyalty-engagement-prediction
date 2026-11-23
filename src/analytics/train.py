@@ -2,9 +2,16 @@
 
 import pandas as pd
 import sqlalchemy 
-from sklearn import model_selection
+import mlflow
+import matplotlib.pyplot as plt
+from sklearn import model_selection, pipeline
 from feature_engine import selection, imputation, encoding
-from sklearn import tree, ensemble, metrics
+from sklearn import tree, ensemble, metrics, pipeline
+
+# %%
+
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment(experiment_id = 1)
 
 # %%
 
@@ -27,7 +34,7 @@ df.head()
 # SAMPLE - OOT
 
 df_oot = df[df['DtRef'] >= '2026-07-01'].reset_index(drop=True)
-df_oot
+df_oot.head()
 
 # %%
 
@@ -125,80 +132,105 @@ imput_1000 = imputation.ArbitraryNumberImputer(
 
 onehot = encoding.OneHotEncoder(variables = cat_features)
 
-# %%
-
-# MODIFY - APLICANDO TRANSFORMAÇÕES NO DATASET
-
-X_train_transform = drop_features.fit_transform(X_train)
-X_train_transform = imput_0.fit_transform(X_train_transform)
-X_train_transform = imput_new.fit_transform(X_train_transform)
-X_train_transform = imput_1000.fit_transform(X_train_transform)
-X_train_transform = onehot.fit_transform(X_train_transform)
-
-# %%
-
 # MODEL
 
 #model = tree.DecisionTreeClassifier(random_state = 42, min_samples_leaf = 50)
-model = ensemble.AdaBoostClassifier(random_state = 42, n_estimators = 150, learning_rate = 0.1)
+model = ensemble.AdaBoostClassifier(random_state = 42)
 
-model.fit(X_train_transform, y_train)
+params = {
+        "n_estimators": [100, 200, 400, 500, 1000],
+        "learning_rate": [0.001, 0.01, 0.05, 0.1, 0.2, 0.5, 0.9, 0.99],
+    }
+
+grid = model_selection.GridSearchCV(model,
+                                    param_grid = params,
+                                    cv = 3,
+                                    scoring = 'roc_auc',
+                                    refit = True,
+                                    verbose = 3,
+                                    n_jobs = -1)
 
 # %%
 
-def predict_proba(X):
+# CRIANDO PIPELINE
 
-    return model.predict(X), model.predict_proba(X)
+# MODEL - ALGORITMO
 
-y_train_predict, y_train_proba = predict_proba(X_train_transform)
+with mlflow.start_run() as r:
+
+    mlflow.sklearn.autolog()
+
+    model_pipeline = pipeline.Pipeline(steps = [
+    ('Remocao de features', drop_features),
+    ('Imputacao de zeros', imput_0),
+    ('Imputacao de Nao usuario', imput_new),
+    ('Imputacao de 1000', imput_1000),
+    ('OneHot encoding', onehot),
+    ('Algoritmo', grid),
+    ])
+
+    model_pipeline.fit(X_train, y_train)
+
+    def predict_proba(X):
+
+        return model_pipeline.predict(X), model_pipeline.predict_proba(X)
+
+    y_train_predict, y_train_proba = predict_proba(X_train)
 
 
-acc_train = metrics.accuracy_score(y_train, y_train_predict)
-auc_train = metrics.roc_auc_score(y_train, y_train_proba[:,1])
+    acc_train = metrics.accuracy_score(y_train, y_train_predict)
+    auc_train = metrics.roc_auc_score(y_train, y_train_proba[:,1])
 
-# %% TESTE
+    # TESTE
 
-X_test[num_features] = X_test[num_features].astype(float)
+    X_test[num_features] = X_test[num_features].astype(float)
 
-X_test_transform = drop_features.transform(X_test)
-X_test_transform = imput_0.transform(X_test_transform)
-X_test_transform = imput_new.transform(X_test_transform)
-X_test_transform = imput_1000.transform(X_test_transform)
-X_test_transform = onehot.transform(X_test_transform)
 
-y_test_predict, y_test_proba = predict_proba(X_test_transform)
+    y_test_predict, y_test_proba = predict_proba(X_test)
 
-acc_test = metrics.accuracy_score(y_test, y_test_predict)
-auc_test = metrics.roc_auc_score(y_test, y_test_proba[:,1])
+    acc_test = metrics.accuracy_score(y_test, y_test_predict)
+    auc_test = metrics.roc_auc_score(y_test, y_test_proba[:,1])
 
-# %% OOT
+    # OOT
 
-y_oot = df_oot[target]
-X_oot = df_oot[features].copy()
+    y_oot = df_oot[target]
+    X_oot = df_oot[features].copy()
 
-X_oot[num_features] = X_oot[num_features].astype(float)
+    X_oot[num_features] = X_oot[num_features].astype(float)
 
-X_oot_transform = drop_features.transform(X_oot)
-X_oot_transform = imput_0.transform(X_oot_transform)
-X_oot_transform = imput_new.transform(X_oot_transform)
-X_oot_transform = imput_1000.transform(X_oot_transform)
-X_oot_transform = onehot.transform(X_oot_transform)
+    y_oot_predict, y_oot_proba = predict_proba(X_oot)
 
-y_oot_predict, y_oot_proba = predict_proba(X_oot_transform)
+    acc_oot = metrics.accuracy_score(y_oot, y_oot_predict)
+    auc_oot = metrics.roc_auc_score(y_oot, y_oot_proba[:,1])
 
-acc_oot = metrics.accuracy_score(y_oot, y_oot_predict)
-auc_oot = metrics.roc_auc_score(y_oot, y_oot_proba[:,1])
+    mlflow.log_metrics({
+        'acc_train': acc_train,
+        'auc_train': auc_train,
+        'acc_test': acc_test,
+        'auc_test': auc_test,
+        'acc_oot': acc_oot,
+        'auc_oot': auc_oot,
+    })
+
+    roc_train = metrics.roc_curve(y_train, y_train_proba[:,1])
+    roc_test = metrics.roc_curve(y_test, y_test_proba[:,1])
+    roc_oot = metrics.roc_curve(y_oot, y_oot_proba[:,1])
+
+    plt.figure(dpi=400)
+    plt.plot(roc_train[0], roc_train[1])
+    plt.plot(roc_test[0], roc_test[1])
+    plt.plot(roc_oot[0], roc_oot[1])
+    plt.legend([f'Treino: {auc_train:.4f}', 
+                f'Teste: {auc_test:.4f}', 
+                f'OOT: {auc_oot:.4f}'])
+    plt.grid(True)
+    plt.title('Curva ROC')  
+    plt.savefig('curva_roc.png')
+
+    mlflow.log_artifact('curva_roc.png')
 
 # %%
 
 print(f"ACC TREINO {acc_train:.2f}, ACC Teste {acc_test:.2f}, ACC oot {acc_oot:.2f}")
 
 print(f"auc TREINO {auc_train:.2f}, auc Teste {auc_test:.2f}, auc oot {auc_oot:.2f}")
-# %%
-
-features_names = X_train_transform.columns.tolist()
-featutes_importance = pd.Series(model.feature_importances_, index = features_names)
-
-featutes_importance.sort_values(ascending =  False)
-
-# %%
