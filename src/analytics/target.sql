@@ -16,8 +16,8 @@ WITH tb_target AS (
     ON t1.IdCliente = t2.IdCliente
     AND date(t1.DtRef, '+28 day') = date(t2.DtRef)
 
-    WHERE ((t1.DtRef >= '2024-03-01' AND t1.DtRef <= '2026-08-01')
-            OR t1.DtRef = '2026-09-01')
+    WHERE ((t1.DtRef >= '2024-03-01' AND t1.DtRef <= '2026-05-01')
+            OR (t1.DtRef >= '2026-07-01' AND t1.DtRef <= '2026-09-01'))
     AND t1.DescLifeCycle <> '05-ZUMBI'
 
 ),
