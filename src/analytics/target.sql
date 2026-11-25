@@ -8,7 +8,7 @@ WITH tb_target AS (
             t1.DescLifeCycle,
             t2.DescLifeCycle AS DescLifeCycleFuturo,
             CASE WHEN t2.DescLifeCycle = '02-FIEL' THEN 1 ELSE 0 END AS flgFiel,
-            ROW_NUMBER() OVER (PARTITION BY t1.IdCliente ORDER BY random()) AS RandomCol
+            ROW_NUMBER() OVER (PARTITION BY t1.IdCliente, (t1.DtRef >= '2026-07-01') ORDER BY random()) AS RandomCol
 
     FROM life_cycle AS t1
 
@@ -17,8 +17,9 @@ WITH tb_target AS (
     AND date(t1.DtRef, '+28 day') = date(t2.DtRef)
 
     WHERE ((t1.DtRef >= '2024-03-01' AND t1.DtRef <= '2026-05-01')
-            OR (t1.DtRef >= '2026-07-01' AND t1.DtRef <= '2026-09-01'))
+            OR (t1.DtRef >= '2026-07-01' AND t1.DtRef <= '2026-08-07'))
     AND t1.DescLifeCycle <> '05-ZUMBI'
+    AND t1.DtRef IS NOT NULL
 
 ),
 

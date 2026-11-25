@@ -11,7 +11,7 @@ from sklearn import tree, ensemble, metrics, pipeline
 # %%
 
 mlflow.set_tracking_uri("http://localhost:5000")
-mlflow.set_experiment(experiment_id = 1)
+mlflow.set_experiment(experiment_id = 2)
 
 # %%
 
@@ -134,12 +134,13 @@ onehot = encoding.OneHotEncoder(variables = cat_features)
 
 # MODEL
 
-#model = tree.DecisionTreeClassifier(random_state = 42, min_samples_leaf = 50)
 model = ensemble.AdaBoostClassifier(random_state = 42)
+#model = ensemble.RandomForestClassifier(random_state = 42)
 
 params = {
         "n_estimators": [100, 200, 400, 500, 1000],
         "learning_rate": [0.001, 0.01, 0.05, 0.1, 0.2, 0.5, 0.9, 0.99],
+        #"min_samples_leaf": [10, 20, 40, 80, 100]
     }
 
 grid = model_selection.GridSearchCV(model,
@@ -170,6 +171,18 @@ with mlflow.start_run() as r:
     ])
 
     model_pipeline.fit(X_train, y_train)
+
+    grid_treinado = model_pipeline.named_steps['Algoritmo']
+
+    mlflow.log_params({
+        f"best_{param}": value
+        for param, value in grid_treinado.best_params_.items()
+    })
+
+    mlflow.log_metric(
+        "best_cv_roc_auc",
+        grid_treinado.best_score_
+    )
 
     def predict_proba(X):
 
